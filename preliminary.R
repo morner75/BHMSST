@@ -13,23 +13,28 @@ data <- do.call(bind_rows, list(data_1,data_2,data_3))
 # 일평균 수온의 연간 최고치
 data1 <-
   data %>%
-  mutate(year=year(일시)) %>% 
-  group_by(지점,year) %>% 
-  summarise(MST=max(`평균 수온(°C)`,na.rm=TRUE),.groups="drop") 
+  mutate(year=year(일시),
+         point=지점, 지점=NULL,
+         point_no=factor(point) %>% as.integer()) %>% 
+  group_by(point_no,point,year) %>% 
+  summarise(MST=max(`평균 수온(°C)`,na.rm=TRUE),
+            AST=mean(`평균 수온(°C)`,na.rm=TRUE),
+            SD=sd(`평균 수온(°C)`,na.rm=TRUE),.groups="drop") 
+saveRDS(data1,"data/SST_toy_data.rds")
 
 
 # boxplot
 data11 <- data1 %>% 
-  mutate(지점=as.factor(지점), year=NULL) %>% 
+  mutate(지점=as.factor(point), year=NULL) %>% 
   drop_na() %>% 
-ggplot(aes(지점,MST))+
+ggplot(aes(point,MST))+
   geom_boxplot()+
   theme_bw()
 
 
 # 관측지점별 시계열 
-data2 <- data1 %>% 
-  pivot_wider(names_from=지점,values_from=MST) %>% 
+data2 <- data1 %>% select(-c(AST,SD,point_no)) %>%  
+  pivot_wider(names_from=point,values_from=MST) %>% 
   arrange(year)
 
 
